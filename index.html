@@ -1,106 +1,106 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026 跨年时钟</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入类似视频中的无衬线字体 -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #000000;
-            --card-bg: #1c1c1e; /* 视频中那种深灰色 */
-            --text-white: #ffffff;
-            --text-gray: #8e8e93;
+<！doctype 超文本标记语言=
+<= 朗="zh-CN">
+<头>
+    <元 字符集="UTF-8">
+    <元 姓名="视口" 内容="宽度=设备宽度，初始比例=1.0，最大比例=1.0，用户可缩放=否">
+    <标题>2026 跨年时钟</标题>
+    <脚本 src="https://cdn.tailwindcss.com"></脚本>
+<! -- 引入类似视频中的无衬线字体 -->
+    <链接 href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Serif+SC:wght@500;700&display=swap" rel="样式表">
+    <风格>
+:根 {
+--bg-color：#000000；
+--card-bg：#1c1c1e；/*视频中那种深灰色*/
+--text-white：#fffff；
+--文本-灰色：#8e8e93；
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-white);
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            -webkit-font-smoothing: antialiased;
+身体 {
+背景色：var(--bg-color)；
+颜色：var(--text-white)；
+字体系列：'inter'，-apple-系统，BlinkMacSystemFont，无衬线；
+高度：100VH；
+边缘: 0;
+溢出: 隐藏的;
+显示: 弯曲;
+挠曲方向: 柱;
+对齐项目: 中心;
+justify-content：中心；
+-webkit-font-moothing：抗锯齿的；
         }
 
-        /* ---------------- 通用动画 ---------------- */
-        .fade-enter { opacity: 0; transition: opacity 1s ease; }
-        .fade-enter-active { opacity: 1; }
-        .fade-exit { opacity: 1; transition: opacity 0.8s ease; }
-        .fade-exit-active { opacity: 0; pointer-events: none; }
+/*----------------通用动画----------------*/
+.淡入{不透明度：0；过渡：不透明度1s缓解；}
+.淡入激活 { 不透明度: 1; }
+.淡出{不透明度：1；过渡：不透明度0.8s缓解；}
+.淡出激活 { 不透明度: 0; 指针事件: 没有一个; }
 
-        /* ---------------- 第一阶段：名字输入 (保持极简) ---------------- */
-        #stage-input {
-            z-index: 20;
-            text-align: center;
-            width: 85%;
-            max-width: 350px;
+/*----------------第一阶段：名字输入(保持极简)----------------*/
+#级输入 {
+Z指数：20；
+文本对齐: 中心;
+宽度: 85%;
+最大宽度：350px；
         }
 
-        .minimal-input {
-            width: 100%;
-            background: transparent;
-            border: none;
-            border-bottom: 2px solid #333;
-            color: #fff;
-            font-size: 1.5rem;
-            padding: 10px;
-            text-align: center;
-            outline: none;
-            border-radius: 0;
-            transition: border-color 0.3s;
-            font-weight: 600;
+.最小输入 {
+宽度: 100%;
+背景: 透明的;
+边境: 没有一个;
+下边框：2px固体#333；
+颜色：#FFF；
+字体大小：1.5REM；
+填充：10px；
+文本对齐: 中心;
+概要: 没有一个;
+边界半径: 0;
+过渡：边框颜色0.3s；
+字体粗细: 600;
         }
 
-        .minimal-input:focus {
-            border-bottom-color: #fff;
+.最小输入:集中 {
+边框底色：#FFF；
         }
 
-        .minimal-btn {
-            margin-top: 30px;
-            background: #fff;
-            color: #000;
-            border: none;
-            padding: 12px 40px;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: transform 0.2s;
+.minimal-btn{
+上边距：30px；
+背景：#FFF；
+颜色: #000;
+边境: 没有一个;
+填充：12px40px；
+字体大小：1REM；
+字体粗细: 600;
+边界半径：30px；
+光标: 指针;
+过渡：改变0.2s；
         }
 
-        .minimal-btn:active {
-            transform: scale(0.95);
+.minimal-btn：活跃的{
+改变: 规模(0.95);
         }
 
-        /* ---------------- 第二阶段：仿视频时钟 ---------------- */
-        #stage-timer {
-            display: none;
-            z-index: 10;
-            width: 100%;
-            text-align: center;
+/*----------------第二阶段：仿视频时钟----------------*/
+#舞台定时器 {
+显示: 没有一个;
+Z指数：10；
+宽度: 100%;
+文本对齐: 中心;
         }
 
-        /* 顶部日期信息 */
-        .date-info {
-            font-size: clamp(0.8rem, 3vw, 1rem);
-            color: #888;
-            margin-bottom: 2rem;
-            font-weight: 400;
-            letter-spacing: 0.5px;
+/* 顶部日期信息 */
+.日期信息 {
+字体大小：夹紧(0.8REM，3VW，1REM)；
+颜色: #888;
+底边距：2REM；
+字体粗细: 400;
+字母间距：0.5px；
         }
 
-        /* 时钟容器 */
-        .clock-container {
-            display: flex;
-            justify-content: center;
-            gap: 10px; /* 卡片间距 */
+/* 时钟容器 */
+.钟容器 {
+显示: 弯曲;
+justify-content：中心；
+差距：10px；/*卡片间距*/
             padding: 0 20px;
         }
 
