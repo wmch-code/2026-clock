@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 跨年时钟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Oswald 字体，还原视频中那种瘦高的数字字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e; /* 截图中的深灰色背景 */
+            --text-white: #ffffff;
+            --text-gray: #888888;
+        }
+
+        /* 强制全屏黑底 */
+        body, html {
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            color: var(--text-white);
+            font-family: 'Noto Serif SC', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            /* 禁用选中 */
+            user-select: none; 
+            -webkit-user-select: none;
+        }
+
+        /* ---------------- 全屏引导层 (解决本地文件无法全屏的问题) ---------------- */
+        #start-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .start-btn {
+            border: 1px solid #333;
+            background: #111;
+            color: #fff;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            margin-top: 20px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+
+        /* ---------------- 核心UI：输入框 (极简) ---------------- */
+        #stage-input { display: none; z-index: 20; text-align: center; width: 80%; max-width: 300px; }
+        .minimal-input {
+            width: 100%; background: transparent; border: none; 
+            border-bottom: 1px solid #444; color: #fff; 
+            font-size: 1.3rem; padding: 10px; text-align: center; 
+            outline: none; font-family: 'Noto Serif SC';
+        }
+        .minimal-btn-small {
+            margin-top: 30px; background: #fff; color: #000; 
+            border: none; padding: 10px 30px; font-size: 1rem; 
+            border-radius: 5px;
+        }
+
+        /* ---------------- 核心UI：时钟 (1:1 还原截图) ---------------- */
+        #stage-timer { 
+            display: none; 
+            z-index: 10; 
+            width: 100%; 
+            text-align: center;
+            /* 确保垂直居中 */
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .date-info { 
+            font-size: clamp(0.7rem, 3vw, 0.9rem); 
+            color: var(--text-gray); 
+            margin-bottom: 2rem; 
+            letter-spacing: 1px;
+            font-family: sans-serif; /* 日期用无衬线 */
+        }
+
+        .clock-container { 
+            display: flex; 
+            justify-content: center; 
+            gap: 12px; /* 卡片间距 */
+            padding: 0 10px;
+        }
+
+        .digit-card { 
+            background-color: var(--card-bg); /* 深灰背景 */
+            border-radius: 16px; /* 圆角 */
+            /* 响应式大小：根据屏幕宽度自动调整 */
+            width: clamp(80px, 28vw, 150px); 
+            height: clamp(80px, 28vw, 150px); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); /* 轻微阴影 */
+        }
+
+        .digit-text { 
+            font-family: 'Oswald', sans-serif; /* 瘦高字体 */
+            font-weight: 500; /* 中等粗细，还原视频 */
+            /* 字体极大，撑满卡片 */
+            font-size: clamp(3.5rem, 16vw, 7rem); 
+            line-height: 1; 
+            color: #e5e5e5; 
+            /* 视频里的字体比较紧凑 */
+            letter-spacing: -2px; 
+            transform: translateY(2px); /* 微调垂直位置 */
+        }
+
+        .quote-text { 
+            margin-top: 3rem; 
+            font-size: clamp(0.8rem, 4vw, 1rem); 
+            color: var(--text-gray); 
+            letter-spacing: 1px;
+            font-weight: 400;
+        }
+
+        /* ---------------- 核心UI：诗词 (结束动画) ---------------- */
+        #stage-poem { 
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 30; background: #000; 
+            align-items: center; justify-content: center; 
+        }
+        
+        .poem-content { 
+            animation: fadeIn 2s ease-out; 
+            text-align: center; 
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .poem-title { 
+            font-size: clamp(1.4rem, 6vw, 2rem); 
+            margin-bottom: 2rem; 
+            color: #fff; 
+        }
+
+        .poem-line { 
+            /* 核心：绝对不换行，自动缩放 */
+            font-size: clamp(1.1rem, 5.5vw, 1.6rem); 
+            line-height: 2.5; 
+            color: #ccc; 
+            white-space: nowrap; 
+        }
+        
+        .highlight { color: #fff; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <!-- 1. 全屏引导层 (点击即可全屏) -->
+    <div id="start-overlay" onclick="enterFullscreen()">
+        <div style="font-size: 1.5rem; margin-bottom: 10px;">2026 跨年时钟</div>
+        <div style="color: #666; font-size: 0.9rem;">点 击 进 入 全 屏</div>
+        <button class="start-btn">开启</button>
+    </div>
+
+    <!-- 2. 名字输入层 -->
+    <div id="stage-input">
+        <div style="color: #888; margin-bottom: 20px;">请输入您的名字</div>
+        <input type="text" id="username" class="minimal-input" autocomplete="off">
+        <button class="minimal-btn-small" onclick="goToClock()">确认</button>
+    </div>
+
+    <!-- 3. 时钟层 (UI 1:1 还原) -->
+    <div id="stage-timer">
+        <!-- 日期：完全复刻截图排版 -->
+        <div class="date-info" id="date-display">
+            <!-- JS 自动填充 -->
+        </div>
+
+        <div class="clock-container">
+            <div class="digit-card">
+                <div class="digit-text" id="h-val">00</div>
+            </div>
+            <div class="digit-card">
+                <div class="digit-text" id="m-val">00</div>
+            </div>
+            <div class="digit-card">
+                <div class="digit-text" id="s-val">00</div>
+            </div>
+        </div>
+
+        <!-- 语录：完全复刻截图 -->
+        <div class="quote-text">
+            “愿来年春山昂首 我为自己筹谋 不再自苦”
+        </div>
+    </div>
+
+    <!-- 4. 诗词展示层 -->
+    <div id="stage-poem">
+        <div class="poem-content" id="poem-box"></div>
+    </div>
+
+<script>
+    /* =========================================
+       1. 全屏控制 (解决本地文件白边问题)
+       ========================================= */
+    function enterFullscreen() {
+        const docEl = document.documentElement;
+        // 尝试请求全屏
+        if (docEl.requestFullscreen) { docEl.requestFullscreen(); }
+        else if (docEl.webkitRequestFullscreen) { docEl.webkitRequestFullscreen(); } // Safari/Chrome
+        else if (docEl.msRequestFullscreen) { docEl.msRequestFullscreen(); } // IE/Edge
+
+        // 隐藏遮罩，显示输入框
+        document.getElementById('start-overlay').style.display = 'none';
+        document.getElementById('stage-input').style.display = 'block';
+    }
+
+    /* =========================================
+       2. 核心逻辑
+       ========================================= */
+    const TARGET_YEAR = 2026;
+    let userName = "";
+    let timerInterval;
+
+    function goToClock() {
+        const val = document.getElementById('username').value.trim();
+        if(!val) return;
+        userName = val;
+        
+        document.getElementById('stage-input').style.display = 'none';
+        document.getElementById('stage-timer').style.display = 'block';
+        
+        updateDate();
+        startTimer();
+    }
+
+    function updateDate() {
+        const now = new Date();
+        // 简单模拟截图中的日期格式
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+        const d = now.getDate();
+        const weeks = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+        // 这里的农历只是模拟文案，如需真实农历需引入庞大算法库，暂用“腊月”代替
+        document.getElementById('date-display').innerText = `${y}年${m}月${d}日 农历腊月 ${weeks[now.getDay()]}`;
+    }
+
+    function startTimer() {
+        tick();
+        timerInterval = setInterval(tick, 1000);
+    }
+
+    function tick() {
+        // 计算北京时间
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const bjTime = utc + (3600000 * 8); // UTC+8
+        
+        const target = new Date(`${TARGET_YEAR}-01-01T00:00:00+08:00`).getTime();
+        const diff = target - bjTime;
+
+        if (diff <= 0) {
+            clearInterval(timerInterval);
+            // 归零
+            updateDigits(0, 0, 0);
+            
+            // 【核心需求】延时3秒
+            setTimeout(() => {
+                showPoem();
+            }, 3000);
+            return;
+        }
+
+        const h = Math.floor(diff / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+        updateDigits(h, m, s);
+    }
+
+    function updateDigits(h, m, s) {
+        document.getElementById('h-val').innerText = pad(h);
+        document.getElementById('m-val').innerText = pad(m);
+        document.getElementById('s-val').innerText = pad(s);
+    }
+
+    function pad(num) {
+        return num < 10 ? '0' + num : num;
+    }
+
+    /* =========================================
+       3. 诗词生成 (不换行)
+       ========================================= */
+    function showPoem() {
+        document.getElementById('stage-timer').style.display = 'none';
+        document.getElementById('stage-poem').style.display = 'flex';
+        
+        const poem = generatePoem(userName);
+        const box = document.getElementById('poem-box');
+        
+        box.innerHTML = `
+            <div class="poem-title">${poem.title}</div>
+            <div class="poem-line">${poem.l1}</div>
+            <div class="poem-line">平安随日永，快乐与时延。</div>
+            <div class="poem-line">${poem.l3}</div>
+        `;
+    }
+
+    function generatePoem(name) {
+        let surname = name.substring(0, 1);
+        let lastChar = name.slice(-1);
+        if(name.length >= 4) { surname = name.substring(0, 2); }
+
+        const v1_pool = ["氏庆新年", "家纳千祥", "宅迎鸿福"];
+        const v2_pool = ["心启瑞篇", "意绘宏图", "志谱新章"];
+        const tail_pool = [
+            ["岁月祥和度", "门庭福泽全"],
+            ["吉星临宝第", "瑞气满华堂"],
+            ["春风苏万物", "福耀九重天"]
+        ];
+
+        const v1 = v1_pool[Math.floor(Math.random() * v1_pool.length)];
+        const v2 = v2_pool[Math.floor(Math.random() * v2_pool.length)];
+        const tail = tail_pool[Math.floor(Math.random() * tail_pool.length)];
+
+        return {
+            title: `《贺${name}新岁》`,
+            l1: `<span class="highlight">${surname}</span>${v1}，<span class="highlight">${lastChar}</span>${v2}。`,
+            l3: `${tail[0]}，${tail[1]}。`
+        };
+    }
+</script>
+</body>
+</html>
+
